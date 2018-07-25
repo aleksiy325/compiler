@@ -6,7 +6,6 @@ def test(int ref _a, int _b) () {
 
 ref _a := 5
 _b := 10
-_a = 10
 test(_a, _b)
 print(_a)
 print(_b)

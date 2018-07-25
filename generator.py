@@ -52,12 +52,8 @@ class Generator(Visitor):
 
         self.env.scope.enter_scope()
         for i, arg in enumerate(func.args):
-            print(func.args)
-            # TODO: Make sure that necessary
             arg.name = arg_ids[i]
-            alloca = self.env.builder.alloca(arg_types[i], name=arg.name)
-            self.env.builder.store(arg, alloca)
-            self.env.scope.add_variable(arg.name, alloca)
+            self.env.scope.add_variable(arg.name, arg)
 
         if block_callback:
             block_callback(self.env)
@@ -96,8 +92,11 @@ class Generator(Visitor):
 
     def visit_variable_dereference(self, var_deref):
         var_id = str(var_deref.idtok)
-        var_addr = self.env.scope.get_variable(var_id)
-        return self.env.builder.load(var_addr, var_id)
+        var = self.env.scope.get_variable(var_id)
+        if isinstance(var, ir.Argument):
+            # if arg dont need to load
+            return var
+        return self.env.builder.load(var, var_id)
 
     def visit_variable_declaration(self, var_decl):
         var_id = str(var_decl.var_id)
