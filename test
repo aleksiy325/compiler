@@ -1,0 +1,11 @@
+def test(int _a, int _b) (int) {
+    _c := _a + _b
+    return _c
+}
+
+ref _a := 5 / 2
+ref _b := 10
+
+print(test(_a, _b))
+
+
