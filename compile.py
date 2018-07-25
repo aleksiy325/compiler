@@ -5,19 +5,12 @@ from lang.generator import Generator
 GRAMMAR = 'lang/grammar.lark'
 
 
-def lex(prog_file):
-    try:
-        with open(GRAMMAR) as f:
-            grammar = f.read()
-        with open(prog_file) as f:
-            program = f.read()
-        parser = Lark(grammar, start='start')
-        tree = parser.parse(program)
-        print(tree.pretty())
-        new_tree = ASTBuilder().transform(tree)
-        return new_tree
-    except IOError as e:
-        print(e)
+def lex(grammar, program):
+    parser = Lark(grammar, start='start')
+    tree = parser.parse(program)
+    print(tree.pretty())
+    new_tree = ASTBuilder().transform(tree)
+    return new_tree
 
 
 def generate(tree):
@@ -27,6 +20,12 @@ def generate(tree):
     return gen
 
 
-ast = lex("test")
-gen = generate(ast)
-gen.env.save_ir('test.ir')
+if __name__ == '__main__':
+    with open("test") as f:
+        program = f.read()
+    with open(GRAMMAR) as f:
+        grammar = f.read()
+
+    ast = lex(grammar, program)
+    gen = generate(ast)
+    gen.env.save_ir('test.ir')

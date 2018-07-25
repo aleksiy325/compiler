@@ -3,24 +3,26 @@ from lark import Lark, Transformer, UnexpectedCharacters
 CHECK_GRAMMAR = 'check_lang/check_grammar.lark'
 
 
-class TestFail(Exception):
-    pass
-
-
-class Phase():
-    def __init__(self, name, statements):
-        self.name = name
-        self.statements = statements
+class Lex():
+    def __init__(self, error):
+        self.error = error
+        self.name = 'lex'
 
     def __str__(self):
-        return "{} {}".format(self.name, self.statements)
+        return "{} {}".format('lex', self.error)
+
+
+class Execute():
+    def __init__(self, output):
+        self.output = output
+        self.name = 'execute'
 
 
 class Error():
     def __init__(self, contains):
         self.contains = contains
         self.line = None
-        self.char = None
+        self.col = None
 
     def __str__(self):
         return "Err contains:{} line:{} char:{}".format(self.contains, self.line, self.char)
@@ -38,33 +40,29 @@ class TestASTBuilder(Transformer):
     def __init__(self):
         super(TestASTBuilder, self).__init__()
 
-    def phase(self, args):
-        phase = Phase(args[0], args[1:])
-        return phase
+    def execute_phase(self, args):
+        return Execute(*args)
 
-    def phase_name(self, args):
-        return str(args[0])
+    def lex_phase(self, args):
+        return Lex(*args)
 
-    def statement(self, args):
-        return args[0]
-
-    def error_statement(self, args):
+    def error(self, args):
         err = Error(str(args[0]))
         for arg in args[1:]:
             if arg[0] == 'line':
                 err.line = arg[1]
-            if arg[0] == 'char':
-                err.char = arg[1]
+            if arg[0] == 'col':
+                err.col = arg[1]
         return err
 
-    def output_statement(self, args):
+    def output(self, args):
         return Output(*args)
 
     def line_n(self, args):
         return ('line', int(str(*args)))
 
-    def char_n(self, args):
-        return ('char', int(str(*args)))
+    def col_n(self, args):
+        return ('col', int(str(*args)))
 
     def string(self, args):
         return str(*args)[1:-1]
@@ -75,8 +73,14 @@ def parse_check(program):
         grammar = f.read()
     parser = Lark(grammar, start='start')
     tree = parser.parse(program)
+    print(tree.pretty())
     new_tree = TestASTBuilder().transform(tree)
     phases = {}
     for phase in new_tree.children:
         phases[phase.name] = phase
     return phases
+
+
+if __name__ == '__main__':
+    with open('tests/test.lang') as f:
+        print(parse_check(f.read()))
