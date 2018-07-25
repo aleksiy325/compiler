@@ -1,5 +1,5 @@
 from lark.lexer import Token
-from visitor import Visitor, Visitable
+from lang.visitor import Visitor, Visitable
 
 INDENT = ' ' * 4
 

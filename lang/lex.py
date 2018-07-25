@@ -1,10 +1,10 @@
 from lark import Transformer, UnexpectedInput
 from lark.lexer import Token
-from common import Function, FunctionCall, FunctionId
-from common import VariableAssignment, VariableDeclaration, VariableDerefrence, VariableId
-from common import ArgList, TypeList, ExpressionList, Block, Return
-from common import Integer, Float, Bool, String, Type
-from generator import Generator
+from lang.common import Function, FunctionCall, FunctionId
+from lang.common import VariableAssignment, VariableDeclaration, VariableDerefrence, VariableId
+from lang.common import ArgList, TypeList, ExpressionList, Block, Return
+from lang.common import Integer, Float, Bool, String, Type
+from lang.generator import Generator
 
 
 class ASTBuilder(Transformer):

@@ -1,10 +1,10 @@
-from visitor import Visitor
-from ir_env import IREnvironment
-from llvmlite import ir, binding
-from mangler import FunctionMangler
-from intrinsics import Intrinsics
-from common import Type
 import codecs
+from llvmlite import ir, binding
+from lang.visitor import Visitor
+from lang.ir_env import IREnvironment
+from lang.mangler import FunctionMangler
+from lang.intrinsics import Intrinsics
+from lang.common import Type
 
 
 class Generator(Visitor):

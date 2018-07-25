@@ -1,4 +1,4 @@
-from common import Type
+from lang.common import Type
 
 
 class FunctionMangler():

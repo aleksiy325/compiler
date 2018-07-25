@@ -1,5 +1,5 @@
 from llvmlite import ir
-from common import Function, Type, TypeList, ArgList, FunctionId, Block
+from lang.common import Function, Type, TypeList, ArgList, FunctionId, Block
 
 INTEGER = 'int'
 

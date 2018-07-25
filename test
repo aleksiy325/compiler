@@ -1,12 +1,20 @@
+# phase lex:
+#   expect error "err" line: 10 char: 10
+# phase gen:
+#   expect error "err" 
+# phase execute:
+#   expect output "10"
+#   expect output "10"
+
 def test(int ref _a, int _b) () {
     _a = _a + _b
-    return
+    returnf
 }
 
 
 ref _a := 5
 _b := 10
-test(_a, _b)
+_a test _b
 print(_a)
 print(_b)
 

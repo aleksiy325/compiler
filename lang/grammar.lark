@@ -16,6 +16,7 @@ statement: _DIV* "if" _DIV+ expression _DIV+ block                          -> i
     | _DIV* variable_id _DIV+ ":=" _DIV+ expression _END                    -> auto_variable_declaration
     | _DIV* variable_id _DIV+ "=" _DIV+ expression _END                     -> variable_assignment
     | _DIV* function_call _END
+    | _DIV* expression _END
 
 return_statement: _DIV* "return" _DIV+ expression_list _END
     | _DIV* "return" _END                
@@ -32,6 +33,7 @@ atom: constant
     | function_call
 
 function_call: function_id "(" expression_list ")"
+            | variable_id "(" expression_list ")"   -> variable_function_call
 
 function_id: FUNCTION_ID_LIT
 variable_id: VARIABLE_ID_LIT
@@ -56,7 +58,7 @@ BOOL_LIT: "true" | "false"
 INTEGER_LIT: DIGIT+
 FLOAT_LIT: DIGIT+ "." DIGIT+ "f"
 
-COMMENT: "//" /[^\n]/* _END
+COMMENT: ("//" | "#") /[^\n]/* _END 
 _END: _DIV* "\n"+
 _DIV: (" " | "\t")+
 LETTER: ("A".."Z" | "a".."z")

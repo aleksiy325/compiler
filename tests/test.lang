@@ -1,0 +1,4 @@
+# phase lex:
+#   expect error "err" line: 10 char: 10
+
+a := 10

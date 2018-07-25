@@ -1,5 +1,5 @@
 from llvmlite import ir, binding
-from scope import Scope
+from lang.scope import Scope
 
 
 class IREnvironment():
@@ -18,7 +18,7 @@ class IREnvironment():
     def _config_llvm(self):
         self.module = ir.Module(name='main_module')
         self.module.triple = self.binding.get_default_triple()
-        func_type = ir.FunctionType(ir.VoidType(), [], False)
+        func_type = ir.FunctionType(ir.IntType(64), [], False)
         main_func = ir.Function(self.module, func_type, name='main')
         block = main_func.append_basic_block(name='entry')
         self.builder = ir.IRBuilder(block)
@@ -43,7 +43,7 @@ class IREnvironment():
         self.scope.add_type("bool", ir.IntType(8))
 
     def _compile_ir(self):
-        self.builder.ret_void()
+        self.builder.ret(ir.Constant(ir.IntType(64), 0))
         mod = self.binding.parse_assembly(str(self.module))
         mod.verify()
         self.engine.add_module(mod)

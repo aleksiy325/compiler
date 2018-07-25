@@ -1,0 +1,21 @@
+start: phase*
+phase: _BEG _DIV+ "phase" _DIV+ phase_name ":" _END statement+
+statement: error_statement | output_statement
+error_statement: _BEG _DIV+ "expect" _DIV+ "error" _DIV+ string (line_n)? (char_n)? _END  
+output_statement: _BEG _DIV+ "expect" _DIV+ "output" _DIV+ string _END
+line_n: _DIV+ "line:" _DIV+ INTEGER_LIT
+char_n: _DIV+ "char:" _DIV+ INTEGER_LIT
+
+string: STRING_LIT
+phase_name: PHASE_NAME_LIT
+
+PHASE_NAME_LIT: LETTER+
+IGNORE: /[^#]/* _END
+STRING_LIT:  /".*?(?<!\\)"/
+LETTER: ("A".."Z" | "a".."z")
+INTEGER_LIT: DIGIT+
+DIGIT: ("0".."9")+
+_BEG: "#"
+_END: _DIV* "\n"+
+_DIV: (" " | "\t")+
+%ignore IGNORE
