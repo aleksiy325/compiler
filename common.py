@@ -3,14 +3,6 @@ from visitor import Visitor, Visitable
 
 INDENT = ' ' * 4
 
-# class AddIntegerFunc():
-#     def __init__(self):
-#         self.id = '+'
-#         self.arglist = ArgList([(Type("int"), "_a"), Type("int"), "_b"])
-#         self.retlist = TypeList([Type("int")])
-
-#     def generate(self, generator: Generator):
-
 
 class ExpressionList(Visitable):
     def __init__(self, expressions):

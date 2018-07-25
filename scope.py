@@ -15,7 +15,7 @@ class Scope():
         self.type_dicts[-1][name] = ir_type
         self.ir_type_dicts[-1][ir_type] = name
 
-    def get_var(self, name):
+    def get_variable(self, name):
         for var_dict in self.var_dicts[::-1]:
             if name in var_dict:
                 return var_dict[name]

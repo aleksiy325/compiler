@@ -49,7 +49,7 @@ class Intrinsics():
             global_fmt.initializer = c_fmt
             fmt_arg = env.builder.bitcast(global_fmt, voidptr_ty)
 
-            _int_ptr = env.scope.get_var('_int')
+            _int_ptr = env.scope.get_variable('_int')
             _int = env.builder.load(_int_ptr)
             printf = env.module.get_global('printf')
             env.builder.call(printf, [fmt_arg, _int])
@@ -64,8 +64,8 @@ class Intrinsics():
         function = Function(FunctionId('+'), arglist, retlist, Block([]))
 
         def integer_add_block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.add(a, b)
@@ -80,8 +80,8 @@ class Intrinsics():
         function = Function(FunctionId('-'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.sub(a, b)
@@ -97,8 +97,8 @@ class Intrinsics():
         function = Function(FunctionId('-^'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.ssub_with_overflow(a, b)
@@ -114,8 +114,8 @@ class Intrinsics():
         function = Function(FunctionId('+^'), arglist, retlist, Block([]))
 
         def integer_add_block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.sadd_with_overflow(a, b)
@@ -127,8 +127,8 @@ class Intrinsics():
         function = Function(FunctionId('<<'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.shl(a, b)
@@ -143,8 +143,8 @@ class Intrinsics():
         function = Function(FunctionId('>>'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.lshr(a, b)
@@ -159,8 +159,8 @@ class Intrinsics():
         function = Function(FunctionId('>>>'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.ashr(a, b)
@@ -175,8 +175,8 @@ class Intrinsics():
         function = Function(FunctionId('*'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.mul(a, b)
@@ -192,8 +192,8 @@ class Intrinsics():
         function = Function(FunctionId('*^'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.smul_with_overflow(a, b)
@@ -208,8 +208,8 @@ class Intrinsics():
         function = Function(FunctionId('/'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.sdiv(a, b)
@@ -224,8 +224,8 @@ class Intrinsics():
         function = Function(FunctionId('//'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.udiv(a, b)
@@ -240,8 +240,8 @@ class Intrinsics():
         function = Function(FunctionId('%'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.srem(a, b)
@@ -256,8 +256,8 @@ class Intrinsics():
         function = Function(FunctionId('%%'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.urem(a, b)
@@ -272,8 +272,8 @@ class Intrinsics():
         function = Function(FunctionId('&'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.and_(a, b)
@@ -288,8 +288,8 @@ class Intrinsics():
         function = Function(FunctionId('|'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.or_(a, b)
@@ -304,8 +304,8 @@ class Intrinsics():
         function = Function(FunctionId('^'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
-            b_ptr = env.scope.get_var('_b')
+            a_ptr = env.scope.get_variable('_a')
+            b_ptr = env.scope.get_variable('_b')
             a = env.builder.load(a_ptr)
             b = env.builder.load(b_ptr)
             add = env.builder.xor(a, b)
@@ -320,7 +320,7 @@ class Intrinsics():
         function = Function(FunctionId('!'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
+            a_ptr = env.scope.get_variable('_a')
             a = env.builder.load(a_ptr)
             add = env.builder.not_(a)
             env.builder.ret(add)
@@ -334,7 +334,7 @@ class Intrinsics():
         function = Function(FunctionId('-'), arglist, retlist, Block([]))
 
         def block(env):
-            a_ptr = env.scope.get_var('_a')
+            a_ptr = env.scope.get_variable('_a')
             a = env.builder.load(a_ptr)
             add = env.builder.neg(a)
             env.builder.ret(add)

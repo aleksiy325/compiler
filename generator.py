@@ -52,6 +52,7 @@ class Generator(Visitor):
 
         self.env.scope.enter_scope()
         for i, arg in enumerate(func.args):
+            print(func.args)
             # TODO: Make sure that necessary
             arg.name = arg_ids[i]
             alloca = self.env.builder.alloca(arg_types[i], name=arg.name)
@@ -95,7 +96,7 @@ class Generator(Visitor):
 
     def visit_variable_dereference(self, var_deref):
         var_id = str(var_deref.idtok)
-        var_addr = self.env.scope.get_var(var_id)
+        var_addr = self.env.scope.get_variable(var_id)
         return self.env.builder.load(var_addr, var_id)
 
     def visit_variable_declaration(self, var_decl):
@@ -124,8 +125,21 @@ class Generator(Visitor):
         # TODO: Redefinitions?
         # TODO: Return val?
 
-    def visit_variable_assigment(self, var_assign):
-        raise NotImplementedError
+    def visit_variable_assignment(self, var_assign):
+        var_id = str(var_assign.var_id)
+        init_val = var_assign.expression.visit(self)
+
+        var_addr = self.env.scope.get_variable(var_id)
+        if isinstance(var_addr.type.pointee, ir.PointerType):
+            # is ref
+            saved_block = self.env.builder.block
+            temp_var_addr = self.env._create_entry_block_alloca(
+                var_id, init_val.type)
+            self.env.builder.position_at_end(saved_block)
+            self.env.builder.store(init_val, temp_var_addr)
+            self.env.builder.store(temp_var_addr, var_addr)
+        else:
+            self.env.builder.store(init_val, var_addr)
 
     def visit_type(self, type_t):
         ir_type = self.env.scope.get_type(str(type_t.typetok))

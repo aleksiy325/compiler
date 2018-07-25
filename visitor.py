@@ -40,7 +40,7 @@ class Visitor(metaclass=ABCMeta):
         pass
 
     @abstractmethod
-    def visit_variable_assigment(self, var_assign):
+    def visit_variable_assignment(self, var_assign):
         pass
 
     @abstractmethod
