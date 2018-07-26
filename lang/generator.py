@@ -129,7 +129,18 @@ class Generator(Visitor):
         init_val = var_assign.expression.visit(self)
 
         var_addr = self.env.scope.get_variable(var_id)
-        if isinstance(var_addr.type.pointee, ir.PointerType):
+
+        if isinstance(var_addr, ir.values.Argument) and not isinstance(var_addr.type, ir.PointerType):
+            # this is an argument but not reference
+            # TODO: check make local copy?
+            saved_block = self.env.builder.block
+            copy_var_addr = self.env._create_entry_block_alloca(
+                var_id, var_addr.type)
+            self.env.builder.position_at_end(saved_block)
+            self.env.builder.store(init_val, copy_var_addr)
+            self.env.scope.add_variable(var_id, copy_var_addr)
+
+        elif isinstance(var_addr.type.pointee, ir.PointerType):
             # is ref
             saved_block = self.env.builder.block
             temp_var_addr = self.env._create_entry_block_alloca(

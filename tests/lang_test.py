@@ -23,7 +23,6 @@ def list_test_files():
 
 @pytest.mark.parametrize('test_file', list_test_files())
 def test(test_file):
-    print(test_file)
     base = basename(test_file)
     name, ext = splitext(base)
     with open(test_file) as f:

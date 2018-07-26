@@ -1,5 +1,5 @@
 # phase execute:
-#   expect output ""
+#   expect output "0\n10\n"
 
 def test(int _b) () {
     _b = 0

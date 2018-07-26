@@ -1,0 +1,15 @@
+# phase execute:
+#   expect output "15\n10\n"
+
+def test(int ref _a, int _b) () {
+    _a = _a + _b
+    _b = 0
+    return
+}
+
+
+ref _a := 5
+_b := 10
+test(_a, _b)
+print(_a)
+print(_b)
