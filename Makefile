@@ -14,3 +14,4 @@ clean:
 	rm $(IR)
 	rm $(IR).o
 	rm output
+	rm tmp

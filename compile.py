@@ -15,7 +15,7 @@ def lex(grammar, program):
 
 def generate(tree):
     gen = Generator()
-    for child in ast.children:
+    for child in tree.children:
         child.visit(gen)
     return gen
 

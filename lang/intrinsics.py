@@ -39,7 +39,7 @@ class Intrinsics():
 
         def print_integer_block(env):
             voidptr_ty = ir.IntType(8).as_pointer()
-            fmt = "%i \n\0"
+            fmt = "%i\n\0"
             c_fmt = ir.Constant(ir.ArrayType(ir.IntType(8), len(fmt)),
                                 bytearray(fmt.encode("utf8")))
             global_fmt = ir.GlobalVariable(

@@ -1,4 +1,5 @@
 from lark import Lark, Transformer, UnexpectedCharacters
+import codecs
 
 CHECK_GRAMMAR = 'check_lang/check_grammar.lark'
 
@@ -25,7 +26,7 @@ class Error():
         self.col = None
 
     def __str__(self):
-        return "Err contains:{} line:{} char:{}".format(self.contains, self.line, self.char)
+        return "Err contains:{} line:{} col:{}".format(self.contains, self.line, self.col)
 
 
 class Output():
@@ -65,7 +66,8 @@ class TestASTBuilder(Transformer):
         return ('col', int(str(*args)))
 
     def string(self, args):
-        return str(*args)[1:-1]
+        return codecs.escape_decode(
+            bytes(args[0][1:-1], "utf-8"))[0].decode("utf-8")
 
 
 def parse_check(program):
@@ -76,6 +78,7 @@ def parse_check(program):
     print(tree.pretty())
     new_tree = TestASTBuilder().transform(tree)
     phases = {}
+
     for phase in new_tree.children:
         phases[phase.name] = phase
     return phases

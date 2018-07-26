@@ -1,0 +1,4 @@
+# phase execute:
+#   expect output "10\n"
+_a := 10
+print(_a)
