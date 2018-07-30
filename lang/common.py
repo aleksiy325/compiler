@@ -4,6 +4,43 @@ from lang.visitor import Visitor, Visitable
 INDENT = ' ' * 4
 
 
+class StructInit(Visitable):
+    def __init__(self, idtok, exprlist):
+        self.id = idtok
+        self.arglist = exprlist
+
+    def visit(self, visitor: Visitor):
+        return visitor.visit_struct_init(self)
+
+    def __str__(self):
+        return '{}{{ {} }}'.format(str(self.id), self.arglist)
+
+
+class Field(Visitable):
+    def __init__(self, type_t, idtok):
+        self.type = type_t
+        self.id = idtok
+
+    def visit(self, visitor: Visitor):
+        return visitor.visit_field(self)
+
+    def __str__(self):
+        return '{} {}'.format(self.type, self.id)
+
+
+class Struct(Visitable):
+    def __init__(self, idtok, fields):
+        self.id = idtok
+        self.fields = fields
+
+    def visit(self, visitor: Visitor):
+        return visitor.visit_struct(self)
+
+    def __str__(self):
+        fields = '\n'.join([INDENT + str(field) for field in self.fields])
+        return 'struct {} {{\n{}\n}}\n'.format(self.id, fields)
+
+
 class ExpressionList(Visitable):
     def __init__(self, expressions):
         self.expressions = expressions

@@ -2,6 +2,8 @@ from lark import Lark
 from lang.lex import ASTBuilder
 from lang.generator import Generator
 
+# TODO: fix compiler command line args
+
 GRAMMAR = 'lang/grammar.lark'
 
 
@@ -27,5 +29,7 @@ if __name__ == '__main__':
         grammar = f.read()
 
     ast = lex(grammar, program)
+    for child in ast.children:
+        print(child)
     gen = generate(ast)
     gen.env.save_ir('test.ir')

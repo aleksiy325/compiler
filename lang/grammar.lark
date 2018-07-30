@@ -1,4 +1,12 @@
-start: (function | statement)*
+start: (function | statement | struct)*
+
+function: _DIV* "def" _DIV+ function_id _DIV* "(" arglist ")" _DIV* "(" typelist ")" _DIV* block
+
+struct: _DIV* "struct" _DIV+ TYPE_ID_LIT _DIV* structdef
+
+structdef: "{" _END+  ( _DIV* field _END)* "}" _END
+
+field: type _DIV+ variable_id
 
 typelist: (type (_DIV* "," _DIV+ type )*)?
 
@@ -6,11 +14,9 @@ arglist: (argpair (_DIV* "," _DIV+ argpair )*)?
 
 argpair: type _DIV+ variable_id
 
-function: _DIV* "def" _DIV+ function_id _DIV* "(" arglist ")" _DIV* "(" typelist ")" _DIV* block
-
 block: "{" _END+  _DIV statement* return_statement?"}" _END
 
-statement: _DIV* "if" _DIV+ expression _DIV+ block                          -> if
+statement.1: _DIV* "if" _DIV+ expression _DIV+ block                          -> if
     | _DIV* "while" _DIV+ expression _DIV+ block                            -> while
     | _DIV* REF_LIT _DIV+ variable_id _DIV+ ":=" _DIV+ expression _END      -> auto_variable_declaration
     | _DIV* variable_id _DIV+ ":=" _DIV+ expression _END                    -> auto_variable_declaration
@@ -18,34 +24,32 @@ statement: _DIV* "if" _DIV+ expression _DIV+ block                          -> i
     | _DIV* function_call _END
     | _DIV* expression _END
 
-return_statement: _DIV* "return" _DIV+ expression_list _END
+return_statement.2: _DIV* "return" _DIV+ expression_list _END
     | _DIV* "return" _END                
 
 expression_list: atom ( _DIV* "," _DIV+ atom)*
 
 expression: atom 
-    | atom (_DIV* function_id _DIV* atom)+  -> binary_function_call
-    
-atom: constant 
-    | "(" expression ")"                    -> bracket_expression
-    | variable_id                           -> variable_deref
-    | function_id _DIV* atom                -> unary_function_call
-    | function_call
+    | atom (_DIV* function_id _DIV* atom)+      -> binary_function_call
 
+atom: constant 
+    | "(" expression ")"                        -> bracket_expression
+    | variable_id                               -> variable_deref
+    | function_id _DIV* atom                    -> unary_function_call
+    | function_call
+    | struct_init
+
+struct_init:  TYPE_ID_LIT _DIV* "{" _DIV* expression_list _DIV* "}"
 function_call: function_id "(" expression_list ")"
             | variable_id "(" expression_list ")"   -> variable_function_call
 
 function_id: FUNCTION_ID_LIT
 variable_id: VARIABLE_ID_LIT
-type: TYPE_LIT (_DIV+ REF_LIT)?
+type: TYPE_ID_LIT (_DIV+ REF_LIT)?
 constant: bool | integer | float | string
+TYPE_ID_LIT: ((SYMBOL)+ | (LETTER+ ("_" | LETTER)*))
 FUNCTION_ID_LIT: ((SYMBOL)+ | (LETTER+ ("_" | LETTER)*)) 
 VARIABLE_ID_LIT: "_" (LETTER | "_")+ 
-
-TYPE_LIT: "int"
-    | "float"
-    | "bool"
-    | "void"
 
 bool: BOOL_LIT 
 integer: DIGIT+

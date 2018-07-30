@@ -32,7 +32,6 @@ def test(test_file):
 
     phases = parse_check(program)
 
-    # lex lang
     if 'lex' in phases:
         lex_phase = phases['lex']
         with pytest.raises(UnexpectedCharacters) as e:

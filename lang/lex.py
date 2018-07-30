@@ -4,12 +4,25 @@ from lang.common import Function, FunctionCall, FunctionId
 from lang.common import VariableAssignment, VariableDeclaration, VariableDerefrence, VariableId
 from lang.common import ArgList, TypeList, ExpressionList, Block, Return
 from lang.common import Integer, Float, Bool, String, Type
+from lang.common import Struct, Field, StructInit
 from lang.generator import Generator
 
 
 class ASTBuilder(Transformer):
     def __init__(self):
         super(ASTBuilder, self).__init__()
+
+    def struct_init(self, args):
+        return StructInit(*args)
+
+    def struct(self, args):
+        return Struct(*args)
+
+    def structdef(self, args):
+        return args
+
+    def field(self, args):
+        return Field(*args)
 
     def function(self, args):
         return Function(*args)

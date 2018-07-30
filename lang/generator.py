@@ -13,6 +13,23 @@ class Generator(Visitor):
         intrinsics = Intrinsics()
         intrinsics.visit(self)
 
+    def visit_field(self, field):
+        raise NotImplementedError
+
+    def visit_struct_init(self, struct_init):
+        type_t = self.env.scope.get_type(struct_init.id)
+        addr = self.env.builder.alloca(type_t)
+        self.env.scope.add_variable(struct_init.id, addr)
+        return addr
+
+    def visit_struct(self, struct):
+        types = [field.type.visit(self) for field in struct.fields]
+        context = ir.global_context
+        ir_struct = context.get_identified_type(str(struct.id))
+        ir_struct.set_body(*types)
+        self.env.scope.add_type(str(struct.id), ir_struct)
+        return ir_struct
+
     def visit_expression_list(self, expr_list):
         raise NotImplementedError
 

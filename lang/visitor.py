@@ -4,6 +4,18 @@ from abc import ABCMeta, abstractmethod
 class Visitor(metaclass=ABCMeta):
 
     @abstractmethod
+    def visit_struct_init(self, field):
+        pass
+
+    @abstractmethod
+    def visit_field(self, field):
+        pass
+
+    @abstractmethod
+    def visit_struct(self, struct):
+        pass
+
+    @abstractmethod
     def visit_expression_list(self, expr_list):
         pass
 
