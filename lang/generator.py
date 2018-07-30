@@ -118,20 +118,15 @@ class Generator(Visitor):
     def visit_variable_declaration(self, var_decl):
         var_id = str(var_decl.var_id)
         init_val = var_decl.expression.visit(self)
-        saved_block = self.env.builder.block
         ir_type = init_val.type
 
         if var_decl.is_ref:
             ir_type = ir.PointerType(init_val.type)
 
-        var_addr = self.env._create_entry_block_alloca(var_id, ir_type)
-        self.env.builder.position_at_end(saved_block)
+        var_addr = self.env.builder.alloca(ir_type)
 
         if var_decl.is_ref:
-            saved_block = self.env.builder.block
-            temp_var_addr = self.env._create_entry_block_alloca(
-                var_id, init_val.type)
-            self.env.builder.position_at_end(saved_block)
+            temp_var_addr = self.env.builder.alloca(init_val.type)
             self.env.builder.store(init_val, temp_var_addr)
             self.env.builder.store(temp_var_addr, var_addr)
         else:
@@ -150,19 +145,13 @@ class Generator(Visitor):
         if isinstance(var_addr, ir.values.Argument) and not isinstance(var_addr.type, ir.PointerType):
             # this is an argument but not reference
             # TODO: check make local copy?
-            saved_block = self.env.builder.block
-            copy_var_addr = self.env._create_entry_block_alloca(
-                var_id, var_addr.type)
-            self.env.builder.position_at_end(saved_block)
+            copy_var_addr = self.env.builder.alloca(var_addr.type)
             self.env.builder.store(init_val, copy_var_addr)
             self.env.scope.add_variable(var_id, copy_var_addr)
 
         elif isinstance(var_addr.type.pointee, ir.PointerType):
             # is ref
-            saved_block = self.env.builder.block
-            temp_var_addr = self.env._create_entry_block_alloca(
-                var_id, init_val.type)
-            self.env.builder.position_at_end(saved_block)
+            temp_var_addr = self.env.builder.alloca(init_val.type)
             self.env.builder.store(init_val, temp_var_addr)
             self.env.builder.store(temp_var_addr, var_addr)
         else:
