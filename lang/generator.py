@@ -44,9 +44,10 @@ class Generator(Visitor):
         return ret
 
     def visit_type_list(self, type_list):
-        types = [type_t.visit(self) for type_t in type_list.typelist]
+        types = [(type_t.visit(self), type_t.is_ref)
+                 for type_t in type_list.typelist]
         if not types:
-            return [ir.VoidType()]
+            return [(ir.VoidType(), False)]
         return types
 
     def visit_block(self, block):
@@ -56,7 +57,7 @@ class Generator(Visitor):
     def visit_function(self, function, block_callback=None):
         args = function.arglist.visit(self)
         arg_types, arg_ids, arg_refs = zip(*args)
-        ret_types = function.retlist.visit(self)
+        ret_types, ret_refs = zip(*function.retlist.visit(self))
 
         name = FunctionMangler.encode(function.id, function.arglist.types())
 
@@ -82,7 +83,7 @@ class Generator(Visitor):
 
         self.env.builder = old_builder
         self.env.scope.exit_scope()
-        self.env.scope.add_function(name, func)
+        self.env.scope.add_function(name, func, arg_refs, ret_refs)
         return func
 
     def visit_function_call(self, func_call):
@@ -94,23 +95,24 @@ class Generator(Visitor):
             ir_type = var_arg.value.type.pointee
             if var_arg.is_ref:
                 ir_type = ir_type.pointee
+
             arg_types.append(Type(self.env.scope.get_type_name(ir_type)))
 
         name = FunctionMangler.encode(func_call.id, arg_types)
 
-        func = self.env.scope.get_function(name)
+        function = self.env.scope.get_function(name)
+        func = function.func
 
-        for i, (arg, func_arg) in enumerate(zip(args, func.args)):
+        for i, (arg, is_ref) in enumerate(zip(args, function.arg_refs)):
             args[i] = self.env.builder.load(arg.value)
-            if arg.is_ref and args[i].type.pointee == func_arg.type:
+            if arg.is_ref and not is_ref:
                 args[i] = self.env.builder.load(args[i])
 
-        # TODO: Return referece
         ret = self.env.builder.call(func, args)
         if not isinstance(func.ftype.return_type, ir.VoidType):
             ret_addr = self.env.builder.alloca(ret.type)
             self.env.builder.store(ret, ret_addr)
-            return Variable(ret_addr)
+            return Variable(ret_addr, is_ref=function.ret_refs[0])
 
     def visit_variable_dereference(self, var_deref):
         var_id = str(var_deref.idtok)
@@ -199,7 +201,8 @@ class Generator(Visitor):
     def visit_return(self, ret):
         # TODO: Multiple RETURNS
         if ret.expression_list.expressions:
-            self.env.builder.ret(
-                ret.expression_list.expressions[0].visit(self))
+            ret_addr = ret.expression_list.expressions[0].visit(self)
+            ret_val = self.env.builder.load(ret_addr.value)
+            return self.env.builder.ret(ret_val)
         else:
             self.env.builder.ret_void()

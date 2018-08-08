@@ -1,3 +1,6 @@
+# phase execute:
+#   expect output "10\n10\n25\n25\n"
+
 ref _a := 10
 
 def ref_test(int ref _a) (int ref) {
