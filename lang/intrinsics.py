@@ -49,7 +49,7 @@ class Intrinsics():
             global_fmt.initializer = c_fmt
             fmt_arg = env.builder.bitcast(global_fmt, voidptr_ty)
 
-            var_addr = env.scope.get_variable('_int').value
+            var_addr = env.scope.get_variable('_int').ir_value
             _int_ptr = env.builder.load(var_addr)
             printf = env.module.get_global('printf')
             env.builder.call(printf, [fmt_arg, _int_ptr])
@@ -64,8 +64,8 @@ class Intrinsics():
         function = Function(FunctionId('+'), arglist, retlist, Block([]))
 
         def integer_add_block(env):
-            aa = env.scope.get_variable('_a').value
-            ba = env.scope.get_variable('_b').value
+            aa = env.scope.get_variable('_a').ir_value
+            ba = env.scope.get_variable('_b').ir_value
             a = env.builder.load(aa)
             b = env.builder.load(ba)
             add = env.builder.add(a, b)

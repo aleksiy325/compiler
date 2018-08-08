@@ -1,12 +1,2 @@
-ref _a := 10
-
-def ref_test(int ref _a) (int ref) {
-    return _a
-}
-
+_a := 10
 print(_a)
-ref _b := ref_test(_a)
-print(_b)
-_b = 25
-print(_a)
-print(_b)
