@@ -105,6 +105,7 @@ class Generator(Visitor):
             if arg.is_ref and args[i].type.pointee == func_arg.type:
                 args[i] = self.env.builder.load(args[i])
 
+        # TODO: Return referece
         ret = self.env.builder.call(func, args)
         if not isinstance(func.ftype.return_type, ir.VoidType):
             ret_addr = self.env.builder.alloca(ret.type)
@@ -121,9 +122,13 @@ class Generator(Visitor):
         ir_type = var.value.type.pointee
         init_val = var.value
 
-        # TODO: add reference assigment
+        if var_decl.is_ref and var.is_ref:
+            var_addr = self.env.builder.alloca(ir_type, name=var_id)
+            addr = self.env.builder.load(var.value)
+            self.env.builder.store(addr, var_addr)
+            self.env.scope.add_variable(var_id, var_addr, is_ref=True)
 
-        if var_decl.is_ref:
+        elif var_decl.is_ref:
             var_addr = self.env.builder.alloca(
                 ir.PointerType(ir_type), name=var_id)
             temp = self.env.builder.load(init_val)
@@ -131,6 +136,7 @@ class Generator(Visitor):
             self.env.builder.store(temp, temp_var_addr)
             self.env.builder.store(temp_var_addr, var_addr)
             self.env.scope.add_variable(var_id, var_addr, is_ref=True)
+
         else:
             var_addr = self.env.builder.alloca(ir_type, name=var_id)
             temp = self.env.builder.load(init_val)

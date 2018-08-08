@@ -1,2 +1,9 @@
+# phase execute:
+#   expect output "10\n10\n3\n3\n"
 ref _a := 10
 ref _b := _a
+print(_a)
+print(_b)
+_a = 3
+print(_a)
+print(_b)
