@@ -120,42 +120,58 @@ class Generator(Visitor):
         init_val = var_decl.expression.visit(self)
         ir_type = init_val.type
 
-        if var_decl.is_ref:
-            ir_type = ir.PointerType(init_val.type)
+        if isinstance(init_val, ir.Constant):
+            # TODO: CLEAN
+            if var_decl.is_ref:
+                ir_type = ir.PointerType(init_val.type)
 
-        var_addr = self.env.builder.alloca(ir_type)
+            var_addr = self.env.builder.alloca(ir_type, name=var_id)
 
-        if var_decl.is_ref:
-            temp_var_addr = self.env.builder.alloca(init_val.type)
-            self.env.builder.store(init_val, temp_var_addr)
-            self.env.builder.store(temp_var_addr, var_addr)
+            if var_decl.is_ref:
+                temp_var_addr = self.env.builder.alloca(init_val.type)
+                self.env.builder.store(init_val, temp_var_addr)
+                self.env.builder.store(temp_var_addr, var_addr)
+            else:
+                self.env.builder.store(init_val, var_addr)
+
+            self.env.scope.add_variable(var_id, var_addr)
+
         else:
+            var_addr = self.env.builder.alloca(ir_type, name=var_id)
             self.env.builder.store(init_val, var_addr)
-        self.env.scope.add_variable(var_id, var_addr)
-
-        # TODO: Redefinitions?
-        # TODO: Return val?
+            self.env.scope.add_variable(var_id, var_addr)
 
     def visit_variable_assignment(self, var_assign):
         var_id = str(var_assign.var_id)
         init_val = var_assign.expression.visit(self)
 
         var_addr = self.env.scope.get_variable(var_id)
+        print(var_addr)
+        print(var_addr.type)
+        print(type(var_addr))
+        print(init_val)
 
-        if isinstance(var_addr, ir.values.Argument) and not isinstance(var_addr.type, ir.PointerType):
-            # this is an argument but not reference
-            # TODO: check make local copy?
-            copy_var_addr = self.env.builder.alloca(var_addr.type)
-            self.env.builder.store(init_val, copy_var_addr)
-            self.env.scope.add_variable(var_id, copy_var_addr)
+        if isinstance(var_addr, ir.values.Argument):
+            if isinstance(var_addr.type, ir.PointerType):
+                # ref
+                self.env.builder.store(init_val, var_addr)
+            else:
+                # this is an argument but not reference
+                copy_var_addr = self.env.builder.alloca(var_addr.type)
+                self.env.builder.store(init_val, copy_var_addr)
+                self.env.scope.add_variable(var_id, copy_var_addr)
 
-        elif isinstance(var_addr.type.pointee, ir.PointerType):
-            # is ref
-            temp_var_addr = self.env.builder.alloca(init_val.type)
-            self.env.builder.store(init_val, temp_var_addr)
-            self.env.builder.store(temp_var_addr, var_addr)
         else:
-            self.env.builder.store(init_val, var_addr)
+            if isinstance(var_addr.type, ir.PointerType) and isinstance(var_addr.type.pointee, ir.PointerType):
+                # is allocated ref
+                temp_var_addr = self.env.builder.alloca(init_val.type)
+                self.env.builder.store(init_val, temp_var_addr)
+                self.env.builder.store(temp_var_addr, var_addr)
+
+            # elif isinstance(init_val, ir.Constant):
+            #     self.env.builder.store(init_val, var_addr)
+            else:
+                self.env.builder.store(init_val, var_addr)
 
     def visit_type(self, type_t):
         ir_type = self.env.scope.get_type(str(type_t.typetok))

@@ -51,11 +51,6 @@ class IREnvironment():
         self.engine.run_static_constructors()
         return mod
 
-    def _create_entry_block_alloca(self, name, type):
-        builder = ir.IRBuilder()
-        builder.position_at_start(self.builder.function.entry_basic_block)
-        return builder.alloca(type, size=None, name=name)
-
     def save_ir(self, filename):
         with open(filename, 'w+') as f:
             self._compile_ir()
