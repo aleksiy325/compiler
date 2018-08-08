@@ -1,3 +1,10 @@
+
+class Variable():
+    def __init__(self, value, is_ref=False):
+        self.value = value
+        self.is_ref = is_ref
+
+
 class Scope():
     def __init__(self):
         self.type_dicts = [{}]
@@ -5,8 +12,8 @@ class Scope():
         self.ir_type_dicts = [{}]
         self.var_dicts = [{}]
 
-    def add_variable(self, name, var_type):
-        self.var_dicts[-1][name] = var_type
+    def add_variable(self, name, var, is_ref=False):
+        self.var_dicts[-1][name] = Variable(var, is_ref)
 
     def add_function(self, name, func):
         self.func_dicts[-1][name] = func

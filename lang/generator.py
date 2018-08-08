@@ -1,4 +1,5 @@
 import codecs
+from lang.scope import Variable
 from llvmlite import ir, binding
 from lang.visitor import Visitor
 from lang.ir_env import IREnvironment
@@ -39,7 +40,7 @@ class Generator(Visitor):
     def visit_arg_list(self, arg_list):
         ret = []
         for type_t, arg_id in arg_list.arglist:
-            ret.append((type_t.visit(self), str(arg_id)))
+            ret.append((type_t.visit(self), str(arg_id), type_t.is_ref))
         return ret
 
     def visit_type_list(self, type_list):
@@ -54,7 +55,7 @@ class Generator(Visitor):
 
     def visit_function(self, function, block_callback=None):
         args = function.arglist.visit(self)
-        arg_types, arg_ids = zip(*args)
+        arg_types, arg_ids, arg_refs = zip(*args)
         ret_types = function.retlist.visit(self)
 
         name = FunctionMangler.encode(function.id, function.arglist.types())
@@ -70,7 +71,9 @@ class Generator(Visitor):
         self.env.scope.enter_scope()
         for i, arg in enumerate(func.args):
             arg.name = arg_ids[i]
-            self.env.scope.add_variable(arg.name, arg)
+            arg_addr = self.env.builder.alloca(arg.type, name=arg.name)
+            self.env.builder.store(arg, arg_addr)
+            self.env.scope.add_variable(arg.name, arg_addr, is_ref=arg_refs[i])
 
         if block_callback:
             block_callback(self.env)
@@ -86,92 +89,69 @@ class Generator(Visitor):
         args = [expr.visit(self)
                 for expr in func_call.expression_list.expressions]
 
-        # TODO: check
         arg_types = []
-        for arg in args:
-            ir_type = arg.type
-            if isinstance(ir_type, ir.PointerType):
+        for var_arg in args:
+            ir_type = var_arg.value.type.pointee
+            if var_arg.is_ref:
                 ir_type = ir_type.pointee
             arg_types.append(Type(self.env.scope.get_type_name(ir_type)))
 
         name = FunctionMangler.encode(func_call.id, arg_types)
+
         func = self.env.scope.get_function(name)
 
-        # handle dereference references if necessary
         for i, (arg, func_arg) in enumerate(zip(args, func.args)):
-            # if deref is of right type
-            if isinstance(arg.type, ir.PointerType) and arg.type.pointee == func_arg.type:
-                # deref
-                deref = self.env.builder.load(arg)
-                args[i] = deref
+            args[i] = self.env.builder.load(arg.value)
+            if arg.is_ref and args[i].type.pointee == func_arg.type:
+                args[i] = self.env.builder.load(args[i])
 
-        return self.env.builder.call(func, args)
+        ret = self.env.builder.call(func, args)
+        if not isinstance(func.ftype.return_type, ir.VoidType):
+            ret_addr = self.env.builder.alloca(ret.type)
+            self.env.builder.store(ret, ret_addr)
+            return Variable(ret_addr)
 
     def visit_variable_dereference(self, var_deref):
         var_id = str(var_deref.idtok)
-        var = self.env.scope.get_variable(var_id)
-        if isinstance(var, ir.Argument):
-            # if arg dont need to load
-            return var
-        return self.env.builder.load(var, var_id)
+        return self.env.scope.get_variable(var_id)
 
     def visit_variable_declaration(self, var_decl):
         var_id = str(var_decl.var_id)
-        init_val = var_decl.expression.visit(self)
-        ir_type = init_val.type
+        var = var_decl.expression.visit(self)
+        ir_type = var.value.type.pointee
+        init_val = var.value
 
-        if isinstance(init_val, ir.Constant):
-            # TODO: CLEAN
-            if var_decl.is_ref:
-                ir_type = ir.PointerType(init_val.type)
+        # TODO: add reference assigment
 
-            var_addr = self.env.builder.alloca(ir_type, name=var_id)
-
-            if var_decl.is_ref:
-                temp_var_addr = self.env.builder.alloca(init_val.type)
-                self.env.builder.store(init_val, temp_var_addr)
-                self.env.builder.store(temp_var_addr, var_addr)
-            else:
-                self.env.builder.store(init_val, var_addr)
-
-            self.env.scope.add_variable(var_id, var_addr)
-
+        if var_decl.is_ref:
+            var_addr = self.env.builder.alloca(
+                ir.PointerType(ir_type), name=var_id)
+            temp = self.env.builder.load(init_val)
+            temp_var_addr = self.env.builder.alloca(ir_type)
+            self.env.builder.store(temp, temp_var_addr)
+            self.env.builder.store(temp_var_addr, var_addr)
+            self.env.scope.add_variable(var_id, var_addr, is_ref=True)
         else:
             var_addr = self.env.builder.alloca(ir_type, name=var_id)
-            self.env.builder.store(init_val, var_addr)
+            temp = self.env.builder.load(init_val)
+            self.env.builder.store(temp, var_addr)
             self.env.scope.add_variable(var_id, var_addr)
 
     def visit_variable_assignment(self, var_assign):
         var_id = str(var_assign.var_id)
-        init_val = var_assign.expression.visit(self)
+        var = self.env.scope.get_variable(var_id)
 
-        var_addr = self.env.scope.get_variable(var_id)
-        print(var_addr)
-        print(var_addr.type)
-        print(type(var_addr))
-        print(init_val)
+        init_var = var_assign.expression.visit(self)
+        init_val = init_var.value
 
-        if isinstance(var_addr, ir.values.Argument):
-            if isinstance(var_addr.type, ir.PointerType):
-                # ref
-                self.env.builder.store(init_val, var_addr)
-            else:
-                # this is an argument but not reference
-                copy_var_addr = self.env.builder.alloca(var_addr.type)
-                self.env.builder.store(init_val, copy_var_addr)
-                self.env.scope.add_variable(var_id, copy_var_addr)
-
+        if var.is_ref:
+            temp = self.env.builder.load(init_val)
+            addr = self.env.builder.load(var.value)
+            self.env.builder.store(temp, addr)
         else:
-            if isinstance(var_addr.type, ir.PointerType) and isinstance(var_addr.type.pointee, ir.PointerType):
-                # is allocated ref
-                temp_var_addr = self.env.builder.alloca(init_val.type)
-                self.env.builder.store(init_val, temp_var_addr)
-                self.env.builder.store(temp_var_addr, var_addr)
-
-            # elif isinstance(init_val, ir.Constant):
-            #     self.env.builder.store(init_val, var_addr)
-            else:
-                self.env.builder.store(init_val, var_addr)
+            temp = self.env.builder.load(init_val)
+            self.env.builder.store(temp, var.value)
+            self.env.scope.add_variable(var_id, var.value)
 
     def visit_type(self, type_t):
         ir_type = self.env.scope.get_type(str(type_t.typetok))
@@ -184,23 +164,31 @@ class Generator(Visitor):
         if bool_t.valtok.value is 'true':
             val = 1
         value = ir.Constant(self.env.scope.get_type('bool'), val)
-        return value
+        temp_var_addr = self.env.builder.alloca(value.type)
+        self.env.builder.store(value, temp_var_addr)
+        return Variable(temp_var_addr)
 
     def visit_float(self, float_t):
         value = ir.Constant(
             ir.FloatType(), float(float_t.valtok.value[:-1]))
-        return value
+        temp_var_addr = self.env.builder.alloca(value.type)
+        self.env.builder.store(value, temp_var_addr)
+        return Variable(temp_var_addr)
 
     def visit_integer(self, integer_t):
         value = ir.Constant(ir.IntType(64), int(integer_t.valtok.value))
-        return value
+        temp_var_addr = self.env.builder.alloca(value.type)
+        self.env.builder.store(value, temp_var_addr)
+        return Variable(temp_var_addr)
 
     def visit_string(self, string_t):
         value = codecs.escape_decode(
             bytes(string_t.valtok.value[1:-1], "utf-8"))[0].decode("utf-8") + '\00'
         string = ir.Constant(ir.ArrayType(ir.IntType(8), len(value)),
                              bytearray(value.encode("utf8")))
-        return string
+        temp_var_addr = self.env.builder.alloca(value.type)
+        self.env.builder.store(value, temp_var_addr)
+        return Variable(temp_var_addr)
 
     def visit_return(self, ret):
         # TODO: Multiple RETURNS
