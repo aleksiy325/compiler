@@ -20,24 +20,27 @@ statement.1: _DIV* "if" _DIV+ expression _DIV+ block                          ->
     | _DIV* "while" _DIV+ expression _DIV+ block                            -> while
     | _DIV* REF_LIT _DIV+ variable_id _DIV+ ":=" _DIV+ expression _END      -> auto_variable_declaration
     | _DIV* variable_id _DIV+ ":=" _DIV+ expression _END                    -> auto_variable_declaration
-    | _DIV* variable_id _DIV+ "=" _DIV+ expression _END                     -> variable_assignment
+    | _DIV* var_access  _DIV+ "=" _DIV+ expression _END                     -> variable_assignment
     | _DIV* function_call _END
     | _DIV* expression _END
 
 return_statement.2: _DIV* "return" _DIV+ expression_list _END
     | _DIV* "return" _END                
 
-expression_list: atom ( _DIV* "," _DIV+ atom)*
+expression_list: (atom ( _DIV* "," _DIV+ atom)*)?
 
 expression: atom 
     | atom (_DIV* function_id _DIV* atom)+      -> binary_function_call
 
 atom: constant 
     | "(" expression ")"                        -> bracket_expression
-    | variable_id                               -> variable_deref
     | function_id _DIV* atom                    -> unary_function_call
     | function_call
     | struct_init
+    | var_access
+
+    
+var_access: variable_id                         -> variable_deref
     | dot_access
 
 dot_access: variable_id (_DIV* "." _DIV* variable_id)+

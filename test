@@ -10,8 +10,13 @@ struct Test {
     Two _two
 }
 
-ref _a := 1
-_two := Two{1}
-_c := Test{0, _a, 0, _a, _two}
+def test(Two ref _two) () {
+    _two._a = 1
+    return
+}
 
-print(_c._two._a) 
+# ref _a := 1
+ref _two := Two{1}
+# _c := Test{0, _a, 0, _a, _two}
+test(_two)
+print(_two._a) 

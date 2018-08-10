@@ -191,16 +191,15 @@ class VariableDeclaration(Visitable):
 
 
 class VariableAssignment(Visitable):
-    def __init__(self, var_id, expression):
-        assert type(var_id) is VariableId
-        self.var_id = var_id
+    def __init__(self, var, expression):
+        self.var = var
         self.expression = expression
 
     def visit(self, visitor: Visitor):
         return visitor.visit_variable_assignment(self)
 
     def __str__(self):
-        return '{} = {}'.format(self.var_id, self.expression)
+        return '{} = {}'.format(self.var, self.expression)
 
 
 class Type(Visitable):

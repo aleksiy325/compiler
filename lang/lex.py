@@ -12,6 +12,10 @@ class ASTBuilder(Transformer):
     def __init__(self):
         super(ASTBuilder, self).__init__()
 
+    def var_access(self, args):
+        assert len(args) == 1
+        return args[0]
+
     def dot_access(self, args):
         return DotAccess(args)
 

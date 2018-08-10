@@ -16,16 +16,23 @@ class Generator(Visitor):
 
     def visit_dot_access(self, dot_access):
         first = dot_access.varlist[0]
-        var = self.env.scope.get_variable(first)
-        type_t = self.env.scope.get_type(var.type_name)
+        meta_var = self.env.scope.get_variable(first)
+        type_t = self.env.scope.get_type(meta_var.type_name)
+
         struct_index = ir.Constant(ir.IntType(32), 0)
         vec = [struct_index]
+
         for field_name in dot_access.varlist[1:]:
             i = type_t.get_field_offset(str(field_name))
             type_t = type_t.fields[i]
             vec.append(ir.Constant(ir.IntType(32), i))
 
-        ele_addr = self.env.builder.gep(var.ir_value, vec)
+        # deref if needed
+        ir_var = meta_var.ir_value
+        if meta_var.is_ref:
+            ir_var = self.env.builder.load(meta_var.ir_value)
+
+        ele_addr = self.env.builder.gep(ir_var, vec)
         return MetaVariable(ele_addr, type_t.name)
 
     def visit_field(self, field):
@@ -199,9 +206,7 @@ class Generator(Visitor):
             self.env.scope.add_variable(var_id, var_addr, var.type_name)
 
     def visit_variable_assignment(self, var_assign):
-        var_id = str(var_assign.var_id)
-        var = self.env.scope.get_variable(var_id)
-
+        var = var_assign.var.visit(self)
         init_var = var_assign.expression.visit(self)
         init_val = init_var.ir_value
 
@@ -212,7 +217,6 @@ class Generator(Visitor):
         else:
             temp = self.env.builder.load(init_val)
             self.env.builder.store(temp, var.ir_value)
-            self.env.scope.add_variable(var_id, var.ir_value, var.type_name)
 
     def visit_type(self, type_t):
         meta_type = self.env.scope.get_type(str(type_t.typetok))
