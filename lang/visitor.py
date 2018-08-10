@@ -4,6 +4,10 @@ from abc import ABCMeta, abstractmethod
 class Visitor(metaclass=ABCMeta):
 
     @abstractmethod
+    def visit_dot_access(self, dot_access):
+        pass
+
+    @abstractmethod
     def visit_struct_init(self, field):
         pass
 

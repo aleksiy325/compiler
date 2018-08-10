@@ -38,6 +38,9 @@ atom: constant
     | function_id _DIV* atom                    -> unary_function_call
     | function_call
     | struct_init
+    | dot_access
+
+dot_access: variable_id (_DIV* "." _DIV* variable_id)+
 
 struct_init:  TYPE_ID_LIT _DIV* "{" _DIV* expression_list _DIV* "}"
 function_call: function_id "(" expression_list ")"

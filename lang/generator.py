@@ -14,25 +14,62 @@ class Generator(Visitor):
         intrinsics = Intrinsics()
         intrinsics.visit(self)
 
+    def visit_dot_access(self, dot_access):
+        first = dot_access.varlist[0]
+        var = self.env.scope.get_variable(first)
+        type_t = self.env.scope.get_type(var.type_name)
+        struct_index = ir.Constant(ir.IntType(32), 0)
+        vec = [struct_index]
+        for field_name in dot_access.varlist[1:]:
+            i = type_t.get_field_offset(str(field_name))
+            type_t = type_t.fields[i]
+            vec.append(ir.Constant(ir.IntType(32), i))
+
+        ele_addr = self.env.builder.gep(var.ir_value, vec)
+        return MetaVariable(ele_addr, type_t.name)
+
     def visit_field(self, field):
         raise NotImplementedError
 
     def visit_struct_init(self, struct_init):
         type_t = self.env.scope.get_type(struct_init.id)
-        addr = self.env.builder.alloca(type_t)
-        self.env.scope.add_variable(struct_init.id, addr)
+        struct_addr = self.env.builder.alloca(type_t.ir_type)
         variables = struct_init.arglist.visit(self)
-        # for i, (arg, arg_ids, arg_refs) in enumerate(args):
-        #     ele_ptr = self.env.builder.gep(addr, i)
-        #     print(ele_ptr)
-        return MetaVariable(addr)
+
+        for i, (field_type, var) in enumerate(zip(type_t.fields, variables)):
+            struct_index = ir.Constant(ir.IntType(32), 0)
+            index = ir.Constant(ir.IntType(32), i)
+            ele_addr = self.env.builder.gep(struct_addr, [struct_index, index])
+
+            if field_type.is_ref and var.is_ref:
+                val_addr = self.env.builder.load(var.ir_value)
+                self.env.builder.store(val_addr, ele_addr)
+
+            elif field_type.is_ref and not var.is_ref:
+                temp = self.env.builder.load(var.ir_value)
+                temp_var_addr = self.env.builder.alloca(temp.type)
+                self.env.builder.store(temp, temp_var_addr)
+                self.env.builder.store(temp_var_addr, ele_addr)
+
+            elif not field_type.is_ref and var.is_ref:
+                val_addr = self.env.builder.load(var.ir_value)
+                val = self.env.builder.load(val_addr)
+                self.env.builder.store(val, ele_addr)
+            else:
+                temp = self.env.builder.load(var.ir_value)
+                self.env.builder.store(temp, ele_addr)
+
+        return MetaVariable(struct_addr, str(struct_init.id))
 
     def visit_struct(self, struct):
         types = [field.type.visit(self) for field in struct.fields]
+        field_names = [str(field.id) for field in struct.fields]
+        ir_types = [type_t.ir_type for type_t in types]
         context = ir.global_context
         ir_struct = context.get_identified_type(str(struct.id))
-        ir_struct.set_body(*types)
-        self.env.scope.add_type(str(struct.id), ir_struct)
+        ir_struct.set_body(*ir_types)
+        self.env.scope.add_type(str(struct.id), ir_struct,
+                                field_names=field_names, fields=types)
 
     def visit_expression_list(self, expr_list):
         return [expr.visit(self) for expr in expr_list.expressions]
@@ -49,7 +86,9 @@ class Generator(Visitor):
     def visit_type_list(self, type_list):
         types = [type_t.visit(self) for type_t in type_list.typelist]
         if not types:
-            return [MetaType(ir.VoidType())]
+            type_t = ir.VoidType()
+            type_name = self.env.scope.get_type_name(type_t)
+            return [MetaType(type_name, type_t)]
         return types
 
     def visit_block(self, block):
@@ -78,7 +117,7 @@ class Generator(Visitor):
             arg_addr = self.env.builder.alloca(arg.type, name=arg_name)
             self.env.builder.store(arg, arg_addr)
             self.env.scope.add_variable(
-                arg.name, arg_addr, is_ref=meta_arg.is_ref)
+                arg.name, arg_addr, meta_arg.name, is_ref=meta_arg.is_ref)
 
         if block_callback:
             block_callback(self.env)
@@ -92,7 +131,6 @@ class Generator(Visitor):
     def visit_function_call(self, func_call):
         args = [expr.visit(self)
                 for expr in func_call.expression_list.expressions]
-
         arg_types = []
         for var_arg in args:
             ir_type = var_arg.ir_value.type.pointee
@@ -116,7 +154,8 @@ class Generator(Visitor):
         if not isinstance(func.ftype.return_type, ir.VoidType):
             ret_addr = self.env.builder.alloca(ret.type)
             self.env.builder.store(ret, ret_addr)
-            return MetaVariable(ret_addr, is_ref=function.meta_rets[0].is_ref)
+            ret_type_name = function.meta_rets[0].name
+            return MetaVariable(ret_addr, ret_type_name, is_ref=function.meta_rets[0].is_ref)
 
     def visit_variable_dereference(self, var_deref):
         var_id = str(var_deref.idtok)
@@ -128,26 +167,36 @@ class Generator(Visitor):
         ir_type = var.ir_value.type.pointee
         init_val = var.ir_value
 
+        # TODO: CLEAN
         if var_decl.is_ref and var.is_ref:
             var_addr = self.env.builder.alloca(ir_type, name=var_id)
             addr = self.env.builder.load(var.ir_value)
             self.env.builder.store(addr, var_addr)
-            self.env.scope.add_variable(var_id, var_addr, is_ref=True)
+            self.env.scope.add_variable(
+                var_id, var_addr, var.type_name, is_ref=True)
 
-        elif var_decl.is_ref:
+        elif var_decl.is_ref and not var.is_ref:
             var_addr = self.env.builder.alloca(
                 ir.PointerType(ir_type), name=var_id)
             temp = self.env.builder.load(init_val)
             temp_var_addr = self.env.builder.alloca(ir_type)
             self.env.builder.store(temp, temp_var_addr)
             self.env.builder.store(temp_var_addr, var_addr)
-            self.env.scope.add_variable(var_id, var_addr, is_ref=True)
+            self.env.scope.add_variable(
+                var_id, var_addr, var.type_name, is_ref=True)
+
+        elif not var_decl.is_ref and var.is_ref:
+            temp = self.env.builder.load(init_val)
+            val = self.env.builder.load(temp)
+            var_addr = self.env.builder.alloca(val.type, name=var_id)
+            self.env.builder.store(val, var_addr)
+            self.env.scope.add_variable(var_id, var_addr, var.type_name)
 
         else:
             var_addr = self.env.builder.alloca(ir_type, name=var_id)
             temp = self.env.builder.load(init_val)
             self.env.builder.store(temp, var_addr)
-            self.env.scope.add_variable(var_id, var_addr)
+            self.env.scope.add_variable(var_id, var_addr, var.type_name)
 
     def visit_variable_assignment(self, var_assign):
         var_id = str(var_assign.var_id)
@@ -163,13 +212,13 @@ class Generator(Visitor):
         else:
             temp = self.env.builder.load(init_val)
             self.env.builder.store(temp, var.ir_value)
-            self.env.scope.add_variable(var_id, var.ir_value)
+            self.env.scope.add_variable(var_id, var.ir_value, var.type_name)
 
     def visit_type(self, type_t):
         meta_type = self.env.scope.get_type(str(type_t.typetok))
         if type_t.is_ref:
             ir_type = ir.PointerType(meta_type.ir_type)
-            return MetaType(ir_type, is_ref=True)
+            return MetaType(str(type_t.typetok), ir_type, is_ref=True)
         return meta_type
 
     def visit_bool(self, bool_t):
@@ -179,20 +228,22 @@ class Generator(Visitor):
         value = ir.Constant(self.env.scope.get_type('bool'), val)
         var_addr = self.env.builder.alloca(value.type)
         self.env.builder.store(value, var_addr)
-        return MetaVariable(var_addr)
+        return MetaVariable(var_addr, 'bool')
 
     def visit_float(self, float_t):
         value = ir.Constant(
             ir.FloatType(), float(float_t.valtok.value[:-1]))
         var_addr = self.env.builder.alloca(value.type)
         self.env.builder.store(value, var_addr)
-        return MetaVariable(var_addr)
+        type_name = self.env.scope.get_type_name(ir.FloatType())
+        return MetaVariable(var_addr, type_name)
 
     def visit_integer(self, integer_t):
         value = ir.Constant(ir.IntType(64), int(integer_t.valtok.value))
         var_addr = self.env.builder.alloca(value.type)
         self.env.builder.store(value, var_addr)
-        return MetaVariable(var_addr)
+        type_name = self.env.scope.get_type_name(value.type)
+        return MetaVariable(var_addr, type_name)
 
     def visit_string(self, string_t):
         value = codecs.escape_decode(
@@ -201,7 +252,8 @@ class Generator(Visitor):
                              bytearray(value.encode("utf8")))
         var_addr = self.env.builder.alloca(value.type)
         self.env.builder.store(string, var_addr)
-        return MetaVariable(var_addr)
+        type_name = self.env.scope.get_type_name(value.type)
+        return MetaVariable(var_addr, type_name)
 
     def visit_return(self, ret):
         # TODO: Multiple RETURNS

@@ -1,2 +1,17 @@
-_a := 10
-print(_a)
+struct Two {
+    int _a
+}
+
+struct Test {
+    int _a
+    int _b
+    int ref _c
+    int ref _d
+    Two _two
+}
+
+ref _a := 1
+_two := Two{1}
+_c := Test{0, _a, 0, _a, _two}
+
+print(_c._two._a) 

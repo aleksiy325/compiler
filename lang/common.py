@@ -4,6 +4,17 @@ from lang.visitor import Visitor, Visitable
 INDENT = ' ' * 4
 
 
+class DotAccess(Visitable):
+    def __init__(self, varlist):
+        self.varlist = varlist
+
+    def visit(self, visitor: Visitor):
+        return visitor.visit_dot_access(self)
+
+    def __str__(self):
+        return '.'.join([str(var) for var in self.varlist])
+
+
 class StructInit(Visitable):
     def __init__(self, idtok, exprlist):
         self.id = idtok
