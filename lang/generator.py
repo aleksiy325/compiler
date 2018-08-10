@@ -33,7 +33,7 @@ class Generator(Visitor):
             ir_var = self.env.builder.load(meta_var.ir_value)
 
         ele_addr = self.env.builder.gep(ir_var, vec)
-        return MetaVariable(ele_addr, type_t.name)
+        return MetaVariable(ele_addr, type_t.name, is_ref=type_t.is_ref)
 
     def visit_field(self, field):
         raise NotImplementedError
@@ -139,6 +139,7 @@ class Generator(Visitor):
         args = [expr.visit(self)
                 for expr in func_call.expression_list.expressions]
         arg_types = []
+
         for var_arg in args:
             ir_type = var_arg.ir_value.type.pointee
             if var_arg.is_ref:

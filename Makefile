@@ -15,3 +15,7 @@ clean:
 	rm $(IR).o
 	rm output
 	rm tmp
+
+test: 
+	python3 -m pytest --cov=lang
+	python3 -m coverage html

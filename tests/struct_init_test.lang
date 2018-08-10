@@ -1,6 +1,5 @@
 # phase execute:
-#   expect output "0\n1\n0\n1\n1"
-
+#   expect output "0\n1\n0\n1\n1\n"
 
 struct Two {
     int _a
@@ -22,4 +21,3 @@ print(_test._b)
 print(_test._c)
 print(_test._d)
 print(_test._two._a)
-

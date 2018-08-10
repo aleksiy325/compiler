@@ -5,3 +5,5 @@ test.ir
 test.ir.o
 output
 tmp
+.coverage
+htmlcov
