@@ -1,5 +1,6 @@
 from llvmlite import ir, binding
 from lang.scope import Scope
+from collections import defaultdict
 
 
 class IREnvironment():
@@ -16,7 +17,7 @@ class IREnvironment():
         self._add_basic_types()
 
     def _config_llvm(self):
-        self.module = ir.Module(name='main_module')
+        self.module = ir.Module(name='main_module', context=ir.Context())
         self.module.triple = self.binding.get_default_triple()
         func_type = ir.FunctionType(ir.IntType(64), [], False)
         main_func = ir.Function(self.module, func_type, name='main')

@@ -69,7 +69,7 @@ INTEGER_LIT: DIGIT+
 FLOAT_LIT: DIGIT+ "." DIGIT+ "f"
 
 COMMENT: ("//" | "#") /[^\n]/* _END 
-_END: _DIV* "\n"+
+_END: _DIV* ("\n" | "\0")+
 _DIV: (" " | "\t")+
 LETTER: ("A".."Z" | "a".."z")
 SYMBOL: ("!" | "|" | "&" | "*" | "<" | ">" | "+" | "-" | "@" | "#" | "$" | "%" | "~" | "." | "/")

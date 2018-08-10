@@ -16,6 +16,5 @@ clean:
 	rm output
 	rm tmp
 
-test: 
+coverage: 
 	python3 -m pytest --cov=lang
-	python3 -m coverage html

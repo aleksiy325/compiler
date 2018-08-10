@@ -72,7 +72,7 @@ class Generator(Visitor):
         types = [field.type.visit(self) for field in struct.fields]
         field_names = [str(field.id) for field in struct.fields]
         ir_types = [type_t.ir_type for type_t in types]
-        context = ir.global_context
+        context = self.env.module.context
         ir_struct = context.get_identified_type(str(struct.id))
         ir_struct.set_body(*ir_types)
         self.env.scope.add_type(str(struct.id), ir_struct,
