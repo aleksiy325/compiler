@@ -14,6 +14,44 @@ class Generator(Visitor):
         intrinsics = Intrinsics()
         intrinsics.visit(self)
 
+    def visit_if_else(self, if_else):
+        meta_cond = if_else.cond_expr.visit(self)
+        val = self.env.builder.load(meta_cond.ir_value)
+        meta_type = self.env.scope.get_type('bool')
+        cond = self.env.builder.icmp_signed(
+            '!=', ir.Constant(meta_type.ir_type, 0), val)
+
+        then_bb = self.env.builder.function.append_basic_block('then')
+        else_bb = ir.Block(self.env.builder.function, 'else')
+        merge_bb = ir.Block(self.env.builder.function, 'ifcont')
+
+        if if_else.has_else:
+            self.env.builder.cbranch(cond, then_bb, else_bb)
+        else:
+            self.env.builder.cbranch(cond, then_bb, merge_bb)
+
+        # then
+        self.env.builder.position_at_start(then_bb)
+        if_else.then_block.visit(self)
+
+        # save block may have been modified
+        then_bb = self.env.builder.block
+        self.env.builder.branch(merge_bb)
+
+        if if_else.has_else:
+            # else
+            self.env.builder.function.basic_blocks.append(else_bb)
+            self.env.builder.position_at_start(else_bb)
+            if_else.else_block.visit(self)
+            else_bb = self.env.builder.block
+
+            # block may have been modified
+            else_bb = self.env.builder.block
+            self.env.builder.branch(merge_bb)
+
+        self.env.builder.function.basic_blocks.append(merge_bb)
+        self.env.builder.position_at_start(merge_bb)
+
     def visit_dot_access(self, dot_access):
         first = dot_access.varlist[0]
         meta_var = self.env.scope.get_variable(first)
@@ -117,6 +155,7 @@ class Generator(Visitor):
         bb_entry = func.append_basic_block('entry')
         old_builder = self.env.builder
         self.env.builder = ir.IRBuilder(bb_entry)
+        self.env.scope.add_function(name, func, arg_types, ret_types)
 
         self.env.scope.enter_scope()
         for arg, meta_arg, arg_name in zip(func.args, arg_types, arg_ids):
@@ -133,7 +172,6 @@ class Generator(Visitor):
 
         self.env.builder = old_builder
         self.env.scope.exit_scope()
-        self.env.scope.add_function(name, func, arg_types, ret_types)
 
     def visit_function_call(self, func_call):
         args = [expr.visit(self)
@@ -228,9 +266,10 @@ class Generator(Visitor):
 
     def visit_bool(self, bool_t):
         val = 0
-        if bool_t.valtok.value is 'true':
+        if bool_t.valtok.value == 'true':
             val = 1
-        value = ir.Constant(self.env.scope.get_type('bool'), val)
+        meta_type = self.env.scope.get_type('bool')
+        value = ir.Constant(meta_type.ir_type, val)
         var_addr = self.env.builder.alloca(value.type)
         self.env.builder.store(value, var_addr)
         return MetaVariable(var_addr, 'bool')

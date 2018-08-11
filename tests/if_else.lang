@@ -1,3 +1,5 @@
+# phase execute:
+#   expect output "1\n3\n5\n"
 if true {
     print(1)
     if false {

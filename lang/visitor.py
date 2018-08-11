@@ -4,6 +4,10 @@ from abc import ABCMeta, abstractmethod
 class Visitor(metaclass=ABCMeta):
 
     @abstractmethod
+    def visit_if_else(self, if_else):
+        pass
+
+    @abstractmethod
     def visit_dot_access(self, dot_access):
         pass
 

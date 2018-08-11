@@ -4,6 +4,28 @@ from lang.visitor import Visitor, Visitable
 INDENT = ' ' * 4
 
 
+class IfElse(Visitable):
+    def __init__(self, cond_expr, then_block, else_block=None, has_else=False):
+        self.cond_expr = cond_expr
+        self.then_block = then_block
+        self.else_block = else_block
+        self.has_else = has_else
+
+    def visit(self, visitor: Visitor):
+        return visitor.visit_if_else(self)
+
+    def __str__(self):
+        then_block_str = str(self.then_block)
+        then_block_str = INDENT + then_block_str.replace('\n', '\n' + INDENT)
+        if self.has_else:
+            else_block_str = str(self.else_block)
+            else_block_str = INDENT + \
+                else_block_str.replace('\n', '\n' + INDENT)
+            return 'if {} {{\n{} \n}} else {{\n{}\n}}\n'.format(self.cond_expr, then_block_str, else_block_str)
+        else:
+            return 'if {} {{\n{} \n}}\n'.format(self.cond_expr, then_block_str)
+
+
 class DotAccess(Visitable):
     def __init__(self, varlist):
         self.varlist = varlist

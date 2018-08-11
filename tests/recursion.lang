@@ -1,0 +1,11 @@
+# phase execute:
+#   expect output "1\n1\n"
+def test(bool _a) () {
+    print(1)
+    if _a {
+        test(false)
+    }
+    return 
+}
+
+test(true)

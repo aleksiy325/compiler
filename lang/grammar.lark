@@ -14,13 +14,14 @@ arglist: (argpair (_DIV* "," _DIV+ argpair )*)?
 
 argpair: type _DIV+ variable_id
 
-block: "{" _END+  _DIV statement* return_statement?"}" _END
+block: _DIV* "{" _END+  statement* return_statement? _DIV* "}" _END?
 
-statement.1: _DIV* "if" _DIV+ expression _DIV+ block                          -> if
-    | _DIV* "while" _DIV+ expression _DIV+ block                            -> while
-    | _DIV* REF_LIT _DIV+ variable_id _DIV+ ":=" _DIV+ expression _END      -> auto_variable_declaration
-    | _DIV* variable_id _DIV+ ":=" _DIV+ expression _END                    -> auto_variable_declaration
-    | _DIV* var_access  _DIV+ "=" _DIV+ expression _END                     -> variable_assignment
+statement.1: _DIV* "if" _DIV+ expression _DIV+ block                                -> if_block
+    |  _DIV* "if" _DIV+ expression _DIV+ block _DIV+ "else" _DIV+ block             -> ifelse_block
+    | _DIV* "while" _DIV+ expression _DIV+ block                                    -> while
+    | _DIV* REF_LIT _DIV+ variable_id _DIV+ ":=" _DIV+ expression _END              -> auto_variable_declaration
+    | _DIV* variable_id _DIV+ ":=" _DIV+ expression _END                            -> auto_variable_declaration
+    | _DIV* var_access  _DIV+ "=" _DIV+ expression _END                             -> variable_assignment
     | _DIV* function_call _END
     | _DIV* expression _END
 
@@ -68,11 +69,11 @@ BOOL_LIT: "true" | "false"
 INTEGER_LIT: DIGIT+
 FLOAT_LIT: DIGIT+ "." DIGIT+ "f"
 
-COMMENT: ("//" | "#") /[^\n]/* _END 
+COMMENT: ("#") /[^\n]/* _END 
 _END: _DIV* ("\n" | "\0")+
 _DIV: (" " | "\t")+
 LETTER: ("A".."Z" | "a".."z")
-SYMBOL: ("!" | "|" | "&" | "*" | "<" | ">" | "+" | "-" | "@" | "#" | "$" | "%" | "~" | "." | "/")
+SYMBOL: ("!" | "|" | "&" | "*" | "<" | ">" | "+" | "-" | "@" | "$" | "%" | "~" | "." | "/")
 DIGIT: ("0".."9")+
 WHITESPACE: (" " | "\t" | "\n")+ 
 %ignore COMMENT
