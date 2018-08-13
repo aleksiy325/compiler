@@ -1,13 +1,16 @@
-if true {
-    print(1)
-    if false {
-        print(4)
-    } else {
-        print(3)
-        if true {
-            print(5)
-        }
-    }
-} else {
-    print(2)
+# phase execute:
+#   expect output "10\n10\n25\n25\n"
+
+
+ref _a := 10
+
+def ref_test(int ref _a) (int ref) {
+    return _a
 }
+
+print(_a)
+ref _b := ref_test(_a)
+print(_b)
+_b = 25
+print(_a)
+print(_b)

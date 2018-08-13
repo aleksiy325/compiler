@@ -1,5 +1,4 @@
 import codecs
-from lang.scope import MetaVariable, MetaType
 from llvmlite import ir, binding
 from lang.visitor import Visitor
 from lang.ir_env import IREnvironment
@@ -8,11 +7,52 @@ from lang.intrinsics import Intrinsics
 from lang.common import Type
 
 
+class MetaVariable():
+    def __init__(self, value, type_name, is_ref=False, is_constant=False):
+        self.ir_value = value
+        self.is_ref = is_ref
+        self.type_name = type_name
+
+
+class MetaFunction():
+    def __init__(self, func, meta_args, meta_rets):
+        self.ir_func = func
+        self.meta_args = meta_args
+        self.meta_rets = meta_rets
+
+
+class MetaType():
+    def __init__(self, name, type_t, is_ref=False, field_names=None, fields=None):
+        self.name = name
+        self.ir_type = type_t
+        self.fields = fields
+        self.is_ref = is_ref
+        if not self.fields:
+            self.fields = []
+        self.field_names = field_names
+        if not self.field_names:
+            self.field_names = []
+
+    def get_field_offset(self, field_name):
+        assert field_name in self.field_names
+        return self.field_names.index(field_name)
+
+
 class Generator(Visitor):
     def __init__(self):
         self.env = IREnvironment()
+        self._add_basic_types()
         intrinsics = Intrinsics()
         intrinsics.visit(self)
+
+    def _add_basic_types(self):
+        self.env.scope.add_type("int", MetaType("int", ir.IntType(64)))
+        self.env.scope.add_type("float", MetaType("float", ir.FloatType()))
+        self.env.scope.add_type("void", MetaType("void", ir.VoidType()))
+        self.env.scope.add_type("bool", MetaType("bool", ir.IntType(8)))
+
+    def visit_access(self, access):
+        raise NotImplementedError
 
     def visit_if_else(self, if_else):
         meta_cond = if_else.cond_expr.visit(self)
@@ -113,8 +153,9 @@ class Generator(Visitor):
         context = self.env.module.context
         ir_struct = context.get_identified_type(str(struct.id))
         ir_struct.set_body(*ir_types)
-        self.env.scope.add_type(str(struct.id), ir_struct,
-                                field_names=field_names, fields=types)
+        meta_type = MetaType(str(struct.id), ir_struct,
+                             field_names=field_names, fields=types)
+        self.env.scope.add_type(str(struct.id), meta_type)
 
     def visit_expression_list(self, expr_list):
         return [expr.visit(self) for expr in expr_list.expressions]
@@ -131,9 +172,7 @@ class Generator(Visitor):
     def visit_type_list(self, type_list):
         types = [type_t.visit(self) for type_t in type_list.typelist]
         if not types:
-            type_t = ir.VoidType()
-            type_name = self.env.scope.get_type_name(type_t)
-            return [MetaType(type_name, type_t)]
+            return [MetaType("void", ir.VoidType())]
         return types
 
     def visit_block(self, block):
@@ -155,15 +194,17 @@ class Generator(Visitor):
         bb_entry = func.append_basic_block('entry')
         old_builder = self.env.builder
         self.env.builder = ir.IRBuilder(bb_entry)
-        self.env.scope.add_function(name, func, arg_types, ret_types)
+        meta_func = MetaFunction(func, arg_types, ret_types)
+        self.env.scope.add_function(name, meta_func)
 
         self.env.scope.enter_scope()
         for arg, meta_arg, arg_name in zip(func.args, arg_types, arg_ids):
             arg.name = arg_name
             arg_addr = self.env.builder.alloca(arg.type, name=arg_name)
             self.env.builder.store(arg, arg_addr)
-            self.env.scope.add_variable(
-                arg.name, arg_addr, meta_arg.name, is_ref=meta_arg.is_ref)
+            meta_var = MetaVariable(
+                arg_addr, meta_arg.name, is_ref=meta_arg.is_ref)
+            self.env.scope.add_variable(arg.name,  meta_var)
 
         if block_callback:
             block_callback(self.env)
@@ -179,11 +220,7 @@ class Generator(Visitor):
         arg_types = []
 
         for var_arg in args:
-            ir_type = var_arg.ir_value.type.pointee
-            if var_arg.is_ref:
-                ir_type = ir_type.pointee
-            stype = self.env.scope.get_type_name(ir_type)
-            arg_types.append(Type(stype))
+            arg_types.append(Type(var_arg.type_name))
 
         name = FunctionMangler.encode(func_call.id, arg_types)
         function = self.env.scope.get_function(name)
@@ -218,8 +255,8 @@ class Generator(Visitor):
             var_addr = self.env.builder.alloca(ir_type, name=var_id)
             addr = self.env.builder.load(var.ir_value)
             self.env.builder.store(addr, var_addr)
-            self.env.scope.add_variable(
-                var_id, var_addr, var.type_name, is_ref=True)
+            meta_var = MetaVariable(var_addr, var.type_name, is_ref=True)
+            self.env.scope.add_variable(var_id, meta_var)
 
         elif var_decl.is_ref and not var.is_ref:
             var_addr = self.env.builder.alloca(
@@ -228,21 +265,23 @@ class Generator(Visitor):
             temp_var_addr = self.env.builder.alloca(ir_type)
             self.env.builder.store(temp, temp_var_addr)
             self.env.builder.store(temp_var_addr, var_addr)
-            self.env.scope.add_variable(
-                var_id, var_addr, var.type_name, is_ref=True)
+            meta_var = MetaVariable(var_addr, var.type_name, is_ref=True)
+            self.env.scope.add_variable(var_id, meta_var)
 
         elif not var_decl.is_ref and var.is_ref:
             temp = self.env.builder.load(init_val)
             val = self.env.builder.load(temp)
             var_addr = self.env.builder.alloca(val.type, name=var_id)
             self.env.builder.store(val, var_addr)
-            self.env.scope.add_variable(var_id, var_addr, var.type_name)
+            meta_var = MetaVariable(var_addr, var.type_name)
+            self.env.scope.add_variable(var_id, meta_var)
 
         else:
             var_addr = self.env.builder.alloca(ir_type, name=var_id)
             temp = self.env.builder.load(init_val)
             self.env.builder.store(temp, var_addr)
-            self.env.scope.add_variable(var_id, var_addr, var.type_name)
+            meta_var = MetaVariable(var_addr, var.type_name)
+            self.env.scope.add_variable(var_id, meta_var)
 
     def visit_variable_assignment(self, var_assign):
         var = var_assign.var.visit(self)

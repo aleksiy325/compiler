@@ -4,6 +4,18 @@ from lang.visitor import Visitor, Visitable
 INDENT = ' ' * 4
 
 
+class Access(Visitable):
+    def __init__(self, var_id, expr):
+        self.var_id = var_id
+        self.expr = expr
+
+    def visit(self, visitor: Visitor):
+        return visitor.visit_acess(self)
+
+    def __str__(self):
+        return '{}[{}]'.format(self.var_id, self.expr)
+
+
 class IfElse(Visitable):
     def __init__(self, cond_expr, then_block, else_block=None, has_else=False):
         self.cond_expr = cond_expr

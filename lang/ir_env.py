@@ -14,7 +14,6 @@ class IREnvironment():
         self._config_llvm()
         self._create_execution_engine()
         self._declare_print()
-        self._add_basic_types()
 
     def _config_llvm(self):
         self.module = ir.Module(name='main_module', context=ir.Context())
@@ -36,12 +35,6 @@ class IREnvironment():
         printf_type = ir.FunctionType(
             ir.IntType(32), [voidptr_type], var_arg=True)
         ir.Function(self.module, printf_type, name='printf')
-
-    def _add_basic_types(self):
-        self.scope.add_type("int", ir.IntType(64))
-        self.scope.add_type("float", ir.FloatType())
-        self.scope.add_type("void", ir.VoidType())
-        self.scope.add_type("bool", ir.IntType(8))
 
     def _compile_ir(self):
         self.builder.ret(ir.Constant(ir.IntType(64), 0))

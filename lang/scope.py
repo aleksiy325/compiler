@@ -1,34 +1,4 @@
 
-class MetaVariable():
-    def __init__(self, value, type_name, is_ref=False):
-        self.ir_value = value
-        self.is_ref = is_ref
-        self.type_name = type_name
-
-
-class MetaFunction():
-    def __init__(self, func, meta_args, meta_rets):
-        self.ir_func = func
-        self.meta_args = meta_args
-        self.meta_rets = meta_rets
-
-
-class MetaType():
-    def __init__(self, name, type_t, is_ref=False, field_names=None, fields=None):
-        self.name = name
-        self.ir_type = type_t
-        self.fields = fields
-        self.is_ref = is_ref
-        if not self.fields:
-            self.fields = []
-        self.field_names = field_names
-        if not self.field_names:
-            self.field_names = []
-
-    def get_field_offset(self, field_name):
-        assert field_name in self.field_names
-        return self.field_names.index(field_name)
-
 
 class Scope():
     def __init__(self):
@@ -37,16 +7,15 @@ class Scope():
         self.ir_type_dicts = [{}]
         self.var_dicts = [{}]
 
-    def add_variable(self, name, var, type_name, is_ref=False):
-        self.var_dicts[-1][name] = MetaVariable(var, type_name, is_ref=is_ref)
+    def add_variable(self, name, meta_var):
+        self.var_dicts[-1][name] = meta_var
 
-    def add_function(self, name, func, meta_args, meta_rets):
-        self.func_dicts[-1][name] = MetaFunction(func, meta_args, meta_rets)
+    def add_function(self, name, meta_func):
+        self.func_dicts[-1][name] = meta_func
 
-    def add_type(self, name, ir_type, field_names=None, fields=None, is_ref=False):
-        self.type_dicts[-1][name] = MetaType(name, ir_type,
-                                             field_names=field_names, fields=fields)
-        self.ir_type_dicts[-1][ir_type] = name
+    def add_type(self, name, meta_type):
+        self.type_dicts[-1][name] = meta_type
+        self.ir_type_dicts[-1][meta_type.ir_type] = name
 
     def get_variable(self, name):
         name = str(name)

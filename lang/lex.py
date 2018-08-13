@@ -4,13 +4,16 @@ from lang.common import Function, FunctionCall, FunctionId
 from lang.common import VariableAssignment, VariableDeclaration, VariableDerefrence, VariableId
 from lang.common import ArgList, TypeList, ExpressionList, Block, Return
 from lang.common import Integer, Float, Bool, String, Type
-from lang.common import Struct, Field, StructInit, DotAccess, IfElse
+from lang.common import Struct, Field, StructInit, DotAccess, IfElse, Access
 from lang.generator import Generator
 
 
 class ASTBuilder(Transformer):
     def __init__(self):
         super(ASTBuilder, self).__init__()
+
+    def access(self, args):
+        return Access(*args)
 
     def if_block(self, args):
         return IfElse(*args)
